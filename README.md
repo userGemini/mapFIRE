@@ -23,6 +23,6 @@
    git commit -m "Fix: Memperbaiki eror mqtt di Screen Dashboard"
    git commit -m "Update: Menambahkan marker baru di MapViewMap.tsx"
 
-===================================CHAT============================================
+===================================CHAT=======================================
 
 userGEMINI : ojo diangger commit rek, file ku ono sg ilang huhuhuu
