@@ -22,4 +22,9 @@ export const firestoreDb = db;
 export const realtimeDb = getDatabase(app);
 export const auth = getAuth(app);
 
+<<<<<<< HEAD
 export default app;
+=======
+export default app;
+
+>>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)

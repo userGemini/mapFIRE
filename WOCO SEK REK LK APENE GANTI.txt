@@ -22,3 +22,5 @@
    Contoh:
    git commit -m "Fix: Memperbaiki eror mqtt di Screen Dashboard"
    git commit -m "Update: Menambahkan marker baru di MapViewMap.tsx"
+
+   =========================================
