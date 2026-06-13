@@ -1,9 +1,17 @@
 // src/components/MapViewMap.tsx
+<<<<<<< HEAD
 // Peta menggunakan react-native-maps tanpa UrlTile OpenStreetMap
 
 import React, { useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import MapView, { Marker, Callout } from 'react-native-maps';
+=======
+// Peta OpenStreetMap melalui Expo MapView dan OSM UrlTile
+
+import React, { useEffect, useMemo, useRef } from 'react';
+import { StyleSheet, View, Text, Platform, TouchableOpacity } from 'react-native';
+import MapView, { Marker, Callout, UrlTile } from 'react-native-maps';
+>>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
 import type { RumahSensor } from '../types';
 import { getStatusColor } from '../constants/colors';
 
@@ -22,6 +30,7 @@ const initialRegion = {
   longitudeDelta: 0.08,
 };
 
+<<<<<<< HEAD
 const getLatitude = (rumah: RumahSensor): number => {
   return (rumah as any).lat ?? (rumah as any).latitude ?? initialRegion.latitude;
 };
@@ -40,6 +49,9 @@ const isValidCoordinate = (latitude: number, longitude: number): boolean => {
     longitude <= 180
   );
 };
+=======
+const OSM_TILE_URL = 'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png';
+>>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
 
 export default function MapViewMap({
   markers,
@@ -51,11 +63,16 @@ export default function MapViewMap({
   const mapRef = useRef<MapView>(null);
 
   const selectedMarker = useMemo(
+<<<<<<< HEAD
     () => markers.find((marker) => marker.id === selectedId) ?? null,
+=======
+    () => markers.find(marker => marker.id === selectedId) ?? null,
+>>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
     [markers, selectedId],
   );
 
   useEffect(() => {
+<<<<<<< HEAD
     if (!selectedMarker) {
       return;
     }
@@ -181,6 +198,73 @@ export default function MapViewMap({
           );
         }),
     [markers, selectedId, onMarkerPress, onInfoPress],
+=======
+    if (selectedMarker) {
+      mapRef.current?.animateToRegion(
+        {
+          latitude: selectedMarker.lat,
+          longitude: selectedMarker.lng,
+          latitudeDelta: 0.02,
+          longitudeDelta: 0.02,
+        },
+        400,
+      );
+    }
+  }, [selectedMarker]);
+
+  const markerViews = useMemo(
+    () => markers.map(rumah => {
+      const isSelected = rumah.id === selectedId;
+      const markerColor = getStatusColor(rumah.status);
+      return (
+        <Marker
+          key={rumah.id}
+          coordinate={{ latitude: rumah.lat, longitude: rumah.lng }}
+          tracksViewChanges={false}
+          onPress={() => onMarkerPress(rumah)}
+        >
+          <View style={[styles.pin, {
+            borderColor: markerColor,
+            backgroundColor: isSelected ? markerColor : '#111824',
+          }]}
+          >
+            <Text style={styles.pinText}>🏠</Text>
+          </View>
+          <Callout tooltip>
+            <View style={styles.calloutContainer}>
+              <Text style={styles.calloutTitle}>{rumah.nama}</Text>
+              <Text style={styles.calloutSubtitle}>{rumah.alamat}</Text>
+              <View style={styles.calloutRow}>
+                <View style={styles.calloutStatBox}>
+                  <Text style={styles.calloutStatValue}>{rumah.suhu != null ? rumah.suhu.toFixed(1) : '--'}</Text>
+                  <Text style={styles.calloutStatLabel}>°C</Text>
+                </View>
+                <View style={styles.calloutStatBox}>
+                  <Text style={styles.calloutStatValue}>{rumah.asap != null ? rumah.asap.toFixed(1) : '--'}</Text>
+                  <Text style={styles.calloutStatLabel}>Asap</Text>
+                </View>
+                <View style={styles.calloutStatBox}>
+                  <Text style={styles.calloutStatValue}>{rumah.co != null ? rumah.co.toFixed(2) : '--'}</Text>
+                  <Text style={styles.calloutStatLabel}>CO</Text>
+                </View>
+              </View>
+              <Text style={styles.calloutStatus}>{rumah.status.toUpperCase()}</Text>
+              <View style={styles.calloutButtonRow}>
+                <TouchableOpacity
+                  style={styles.calloutButton}
+                  onPress={() => onInfoPress?.(rumah)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.calloutButtonText}>ℹ️ Info Lokasi</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Callout>
+        </Marker>
+      );
+    }),
+    [markers, onMarkerPress, selectedId],
+>>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
   );
 
   return (
@@ -189,16 +273,31 @@ export default function MapViewMap({
         ref={mapRef}
         style={styles.map}
         initialRegion={initialRegion}
+<<<<<<< HEAD
         onPress={onMapPress}
+=======
+        onPress={() => onMapPress()}
+>>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
         pitchEnabled={false}
         rotateEnabled={false}
         zoomControlEnabled={false}
         showsCompass={false}
         showsPointsOfInterest={false}
         toolbarEnabled={false}
+<<<<<<< HEAD
         mapType="standard"
         loadingEnabled
       >
+=======
+        mapType={Platform.OS === 'android' ? 'none' : 'standard'}
+      >
+        <UrlTile
+          urlTemplate={OSM_TILE_URL}
+          maximumZ={19}
+          tileSize={256}
+          zIndex={-1}
+        />
+>>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
         {markerViews}
       </MapView>
     </View>
@@ -210,6 +309,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0f1117',
   },
+<<<<<<< HEAD
 
   map: {
     flex: 1,
@@ -219,6 +319,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
+=======
+  map: {
+    flex: 1,
+  },
+>>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
   pin: {
     width: 36,
     height: 36,
@@ -232,6 +337,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 5,
   },
+<<<<<<< HEAD
 
   pinText: {
     fontSize: 16,
@@ -253,25 +359,39 @@ const styles = StyleSheet.create({
 
   calloutContainer: {
     width: 210,
+=======
+  pinText: {
+    fontSize: 16,
+  },
+  calloutContainer: {
+    width: 200,
+>>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
     padding: 12,
     backgroundColor: '#1e2130',
     borderRadius: 14,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
   },
+<<<<<<< HEAD
 
+=======
+>>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
   calloutTitle: {
     color: '#fff',
     fontSize: 14,
     fontWeight: '700',
     marginBottom: 4,
   },
+<<<<<<< HEAD
 
+=======
+>>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
   calloutSubtitle: {
     color: 'rgba(255,255,255,0.7)',
     fontSize: 12,
     marginBottom: 10,
   },
+<<<<<<< HEAD
 
   coordinateBox: {
     backgroundColor: 'rgba(255,255,255,0.06)',
@@ -285,39 +405,61 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
 
+=======
+>>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
   calloutRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 10,
   },
+<<<<<<< HEAD
 
+=======
+>>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
   calloutStatBox: {
     alignItems: 'center',
     flex: 1,
   },
+<<<<<<< HEAD
 
+=======
+>>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
   calloutStatValue: {
     color: '#fff',
     fontSize: 14,
     fontWeight: '700',
   },
+<<<<<<< HEAD
 
+=======
+>>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
   calloutStatLabel: {
     color: 'rgba(255,255,255,0.6)',
     fontSize: 10,
   },
+<<<<<<< HEAD
 
   calloutStatus: {
+=======
+  calloutStatus: {
+    color: '#E24B4A',
+>>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
     fontWeight: '700',
     fontSize: 12,
     textAlign: 'right',
     marginBottom: 10,
   },
+<<<<<<< HEAD
 
   calloutButtonRow: {
     marginTop: 8,
   },
 
+=======
+  calloutButtonRow: {
+    marginTop: 8,
+  },
+>>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
   calloutButton: {
     paddingVertical: 8,
     paddingHorizontal: 12,
@@ -327,10 +469,17 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(29, 158, 117, 0.4)',
     alignItems: 'center',
   },
+<<<<<<< HEAD
 
+=======
+>>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
   calloutButtonText: {
     color: '#1D9E75',
     fontSize: 12,
     fontWeight: '600',
   },
+<<<<<<< HEAD
 });
+=======
+});
+>>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329

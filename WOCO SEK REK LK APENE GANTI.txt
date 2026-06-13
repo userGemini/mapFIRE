@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-# mapFIRE2
-=======
 1. KUNCI IDENTITAS
    Sebelum commit, pastikan Git di VS Code kamu sudah terkunci pakai nama akun GitHub-mu sendiri. 
    Jalankan perintah ini di terminal:
@@ -25,8 +22,3 @@
    Contoh:
    git commit -m "Fix: Memperbaiki eror mqtt di Screen Dashboard"
    git commit -m "Update: Menambahkan marker baru di MapViewMap.tsx"
-
-==================================CHAT=======================================
-
-userGEMINI : ojo diangger commit rek, file ku ono sg ilang huhuhuu
->>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
