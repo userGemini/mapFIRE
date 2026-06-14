@@ -77,8 +77,4 @@ export const loginUserDenganFirestore = async (
 
 export const logoutUser = async () => {
   await signOut(auth);
-<<<<<<< HEAD
 };
-=======
-};
->>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)

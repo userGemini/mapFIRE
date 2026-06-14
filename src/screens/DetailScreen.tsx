@@ -1,4 +1,4 @@
-// src/screens/DetailScreen.tsx — SDK 54
+// src/screens/DetailScreen.tsx — SDK 54 REVISI INTEGRASI TELEGRAM
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -8,6 +8,8 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { StackNavigationProp } from '@react-navigation/stack';
@@ -16,6 +18,8 @@ import { COLORS } from '../constants/colors';
 import SensorCard from '../components/SensorCard';
 import StatusBadge from '../components/StatusBadge';
 import type { RootStackParamList } from '../types';
+// 🌟 Import service Axios POST Telegram
+import { kirimNotifikasiDaruratTeks } from '../services/emergencyService';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Detail'>;
 type Route = RouteProp<RootStackParamList, 'Detail'>;
@@ -85,6 +89,9 @@ export default function DetailScreen({
     co: Array.from({ length: 12 }, () => rumah.co ?? 0),
   });
 
+  // 🌟 State Loading untuk proses Axios POST
+  const [loadingAxios, setLoadingAxios] = useState<boolean>(false);
+
   useEffect(() => {
     const iv = setInterval(() => {
       const adaDataSensor =
@@ -103,6 +110,37 @@ export default function DetailScreen({
 
     return () => clearInterval(iv);
   }, [rumah]);
+
+  // 🌟 Fungsi Handler pemicu Notifikasi Dinamis berdasarkan status device
+  const handleKirimLaporanDarurat = async (levelAksi: 'waspada' | 'bahaya') => {
+    setLoadingAxios(true);
+    try {
+      const payload = {
+        idRumah: rumah.id,
+        namaPemilik: rumah.nama,
+        alamatRumah: rumah.alamat,
+        suhu: rumah.suhu ?? 0,
+        asap: rumah.asap ?? 0,
+        co: rumah.co ?? 0,
+        level: levelAksi, // Menyalin parameter level ke service Axios
+      };
+
+      const sukses = await kirimNotifikasiDaruratTeks(payload);
+
+      if (sukses) {
+        const teksAlert = levelAksi === 'bahaya'
+          ? "Laporan Kedaruratan Terkirim! Armada pemadam kebakaran segera dikerahkan ke lokasi."
+          : "Peringatan Dini Terkirim! Petugas sektor patroli sedang menuju lokasi pengecekan.";
+        Alert.alert("🚒 Posko Terintegrasi", teksAlert);
+      } else {
+        Alert.alert("Pengiriman Gagal", "Gagal meneruskan laporan taktis ke Telegram.");
+      }
+    } catch (err) {
+      Alert.alert("Error", "Terjadi kegagalan interkoneksi REST API.");
+    } finally {
+      setLoadingAxios(false);
+    }
+  };
 
   const infoRows = [
     { label: 'ID Perangkat', value: rumah.id },
@@ -220,18 +258,26 @@ export default function DetailScreen({
           ))}
         </View>
 
+        {/* 🌟 TOMBOL AKSI DINAMIS TERKONEKSI TELEGRAM */}
         {(rumah.status === 'bahaya' || rumah.status === 'waspada') && (
           <TouchableOpacity
             style={[
               styles.dispatchBtn,
               rumah.status === 'bahaya' && { backgroundColor: COLORS.brand },
+              loadingAxios && { opacity: 0.6 }
             ]}
+            disabled={loadingAxios}
+            onPress={() => handleKirimLaporanDarurat(rumah.status as 'waspada' | 'bahaya')}
           >
-            <Text style={styles.dispatchTxt}>
-              {rumah.status === 'bahaya'
-                ? '🚒 Kirim Tim Pemadam Sekarang'
-                : '👷 Kirim Petugas Cek Lokasi'}
-            </Text>
+            {loadingAxios ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.dispatchTxt}>
+                {rumah.status === 'bahaya'
+                  ? '🚒 Kirim Tim Pemadam Sekarang'
+                  : '👷 Kirim Petugas Cek Lokasi'}
+              </Text>
+            )}
           </TouchableOpacity>
         )}
 
@@ -246,7 +292,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.bg_primary,
   },
-
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -257,27 +302,22 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
     gap: 10,
   },
-
   backBtn: {
     padding: 4,
   },
-
   headerTitle: {
     fontSize: 15,
     fontWeight: '600',
     color: '#fff',
   },
-
   headerSub: {
     fontSize: 12,
     color: COLORS.text_muted,
   },
-
   scroll: {
     flex: 1,
     padding: 14,
   },
-
   section: {
     fontSize: 13,
     fontWeight: '600',
@@ -285,11 +325,11 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 8,
   },
-
   sensorGrid: {
     flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
   },
-
   threshBox: {
     backgroundColor: COLORS.bg_secondary,
     borderRadius: 12,
@@ -298,54 +338,46 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     marginBottom: 4,
   },
-
   threshTitle: {
     fontSize: 11,
     color: COLORS.text_muted,
     marginBottom: 8,
   },
-
   threshRow: {
     flexDirection: 'row',
     gap: 10,
   },
-
   threshItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
   },
-
   threshDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
   },
-
   threshTxt: {
     fontSize: 11,
     color: COLORS.text_secondary,
   },
-
   chartCard: {
     backgroundColor: COLORS.bg_secondary,
     borderRadius: 12,
     padding: 14,
     borderWidth: 0.5,
     borderColor: COLORS.border,
+    marginBottom: 10,
   },
-
   chartFoot: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 6,
   },
-
   chartLbl: {
     fontSize: 10,
     color: COLORS.text_hint,
   },
-
   infoCard: {
     backgroundColor: COLORS.bg_secondary,
     borderRadius: 12,
@@ -353,7 +385,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     overflow: 'hidden',
   },
-
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -361,38 +392,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
-
   infoRowBorder: {
     borderBottomWidth: 0.5,
     borderBottomColor: COLORS.border,
   },
-
   infoLabel: {
     fontSize: 13,
     color: COLORS.text_muted,
     flex: 1,
   },
-
   infoValue: {
     fontSize: 13,
     color: COLORS.text_primary,
-    flex: 1,
+    flex: 2,
     textAlign: 'right',
   },
-
   dispatchBtn: {
-    marginTop: 16,
+    marginTop: 20,
     backgroundColor: COLORS.warning_dim,
     borderWidth: 1,
     borderColor: COLORS.warning + '50',
     borderRadius: 12,
-    padding: 14,
+    padding: 15,
     alignItems: 'center',
   },
-
   dispatchTxt: {
     color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
   },
 });

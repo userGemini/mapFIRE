@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-// src/screens/LoginScreen.tsx
-=======
 // src/screens/LoginScreen.tsx — SDK 540
->>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
 
 import React, { useState } from 'react';
 import {

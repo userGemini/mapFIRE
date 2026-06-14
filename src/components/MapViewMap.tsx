@@ -1,23 +1,9 @@
 // src/components/MapViewMap.tsx
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)
 // Peta menggunakan react-native-maps tanpa UrlTile OpenStreetMap
 
 import React, { useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import MapView, { Marker, Callout } from 'react-native-maps';
-<<<<<<< HEAD
-=======
-// Peta OpenStreetMap melalui Expo MapView dan OSM UrlTile
-
-import React, { useEffect, useMemo, useRef } from 'react';
-import { StyleSheet, View, Text, Platform, TouchableOpacity } from 'react-native';
-import MapView, { Marker, Callout, UrlTile } from 'react-native-maps';
->>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
-=======
->>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)
 import type { RumahSensor } from '../types';
 import { getStatusColor } from '../constants/colors';
 
@@ -36,10 +22,6 @@ const initialRegion = {
   longitudeDelta: 0.08,
 };
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)
 const getLatitude = (rumah: RumahSensor): number => {
   return (rumah as any).lat ?? (rumah as any).latitude ?? initialRegion.latitude;
 };
@@ -58,12 +40,6 @@ const isValidCoordinate = (latitude: number, longitude: number): boolean => {
     longitude <= 180
   );
 };
-<<<<<<< HEAD
-=======
-const OSM_TILE_URL = 'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png';
->>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
-=======
->>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)
 
 export default function MapViewMap({
   markers,
@@ -75,23 +51,11 @@ export default function MapViewMap({
   const mapRef = useRef<MapView>(null);
 
   const selectedMarker = useMemo(
-<<<<<<< HEAD
-<<<<<<< HEAD
     () => markers.find((marker) => marker.id === selectedId) ?? null,
-=======
-    () => markers.find(marker => marker.id === selectedId) ?? null,
->>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
-=======
-    () => markers.find((marker) => marker.id === selectedId) ?? null,
->>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)
     [markers, selectedId],
   );
 
   useEffect(() => {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)
     if (!selectedMarker) {
       return;
     }
@@ -131,14 +95,16 @@ export default function MapViewMap({
 
           return (
             <Marker
+            anchor={{ x: 0.5, y: 0.5 }}
               key={rumah.id}
               coordinate={{
                 latitude,
                 longitude,
               }}
-              tracksViewChanges={false}
+              tracksViewChanges={true} //false untuk performa, true untuk marker yang dipilih agar animasi callout lancar
               onPress={() => onMarkerPress(rumah)}
             >
+            <View style={styles.markerContainer}>
               <View style={styles.markerWrapper}>
                 <View
                   style={[
@@ -160,6 +126,7 @@ export default function MapViewMap({
                   </View>
                 )}
               </View>
+            </View>
 
               <Callout tooltip onPress={() => onInfoPress?.(rumah)}>
                 <View style={styles.calloutContainer}>
@@ -203,13 +170,16 @@ export default function MapViewMap({
                   </Text>
 
                   <View style={styles.calloutButtonRow}>
-                    <TouchableOpacity
+                    <View style={styles.calloutButtonMock}>
+                      <Text style={styles.calloutButtonText}>ℹ️ Klik untuk Detail</Text>
+                    </View>
+                    {/* <TouchableOpacity
                       style={styles.calloutButton}
                       onPress={() => onInfoPress?.(rumah)}
                       activeOpacity={0.7}
                     >
                       <Text style={styles.calloutButtonText}>ℹ️ Info Lokasi</Text>
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                   </View>
                 </View>
               </Callout>
@@ -217,76 +187,6 @@ export default function MapViewMap({
           );
         }),
     [markers, selectedId, onMarkerPress, onInfoPress],
-<<<<<<< HEAD
-=======
-    if (selectedMarker) {
-      mapRef.current?.animateToRegion(
-        {
-          latitude: selectedMarker.lat,
-          longitude: selectedMarker.lng,
-          latitudeDelta: 0.02,
-          longitudeDelta: 0.02,
-        },
-        400,
-      );
-    }
-  }, [selectedMarker]);
-
-  const markerViews = useMemo(
-    () => markers.map(rumah => {
-      const isSelected = rumah.id === selectedId;
-      const markerColor = getStatusColor(rumah.status);
-      return (
-        <Marker
-          key={rumah.id}
-          coordinate={{ latitude: rumah.lat, longitude: rumah.lng }}
-          tracksViewChanges={false}
-          onPress={() => onMarkerPress(rumah)}
-        >
-          <View style={[styles.pin, {
-            borderColor: markerColor,
-            backgroundColor: isSelected ? markerColor : '#111824',
-          }]}
-          >
-            <Text style={styles.pinText}>🏠</Text>
-          </View>
-          <Callout tooltip>
-            <View style={styles.calloutContainer}>
-              <Text style={styles.calloutTitle}>{rumah.nama}</Text>
-              <Text style={styles.calloutSubtitle}>{rumah.alamat}</Text>
-              <View style={styles.calloutRow}>
-                <View style={styles.calloutStatBox}>
-                  <Text style={styles.calloutStatValue}>{rumah.suhu != null ? rumah.suhu.toFixed(1) : '--'}</Text>
-                  <Text style={styles.calloutStatLabel}>°C</Text>
-                </View>
-                <View style={styles.calloutStatBox}>
-                  <Text style={styles.calloutStatValue}>{rumah.asap != null ? rumah.asap.toFixed(1) : '--'}</Text>
-                  <Text style={styles.calloutStatLabel}>Asap</Text>
-                </View>
-                <View style={styles.calloutStatBox}>
-                  <Text style={styles.calloutStatValue}>{rumah.co != null ? rumah.co.toFixed(2) : '--'}</Text>
-                  <Text style={styles.calloutStatLabel}>CO</Text>
-                </View>
-              </View>
-              <Text style={styles.calloutStatus}>{rumah.status.toUpperCase()}</Text>
-              <View style={styles.calloutButtonRow}>
-                <TouchableOpacity
-                  style={styles.calloutButton}
-                  onPress={() => onInfoPress?.(rumah)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.calloutButtonText}>ℹ️ Info Lokasi</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Callout>
-        </Marker>
-      );
-    }),
-    [markers, onMarkerPress, selectedId],
->>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
-=======
->>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)
   );
 
   return (
@@ -295,41 +195,16 @@ export default function MapViewMap({
         ref={mapRef}
         style={styles.map}
         initialRegion={initialRegion}
-<<<<<<< HEAD
-<<<<<<< HEAD
         onPress={onMapPress}
-=======
-        onPress={() => onMapPress()}
->>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
-=======
-        onPress={onMapPress}
->>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)
         pitchEnabled={false}
         rotateEnabled={false}
         zoomControlEnabled={false}
         showsCompass={false}
         showsPointsOfInterest={false}
         toolbarEnabled={false}
-<<<<<<< HEAD
-<<<<<<< HEAD
         mapType="standard"
         loadingEnabled
       >
-=======
-        mapType={Platform.OS === 'android' ? 'none' : 'standard'}
-      >
-        <UrlTile
-          urlTemplate={OSM_TILE_URL}
-          maximumZ={19}
-          tileSize={256}
-          zIndex={-1}
-        />
->>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
-=======
-        mapType="standard"
-        loadingEnabled
-      >
->>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)
         {markerViews}
       </MapView>
     </View>
@@ -341,10 +216,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#0f1117',
   },
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)
+
+  calloutButtonMock: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(30, 156, 118, 0.2)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(29, 158, 117, 0.4)',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+
+  markerContainer: {
+    padding: 5, 
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   map: {
     flex: 1,
@@ -354,14 +242,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-<<<<<<< HEAD
-=======
-  map: {
-    flex: 1,
-  },
->>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
-=======
->>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)
   pin: {
     width: 36,
     height: 36,
@@ -375,10 +255,6 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 5,
   },
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)
 
   pinText: {
     fontSize: 16,
@@ -400,53 +276,25 @@ const styles = StyleSheet.create({
 
   calloutContainer: {
     width: 210,
-<<<<<<< HEAD
-=======
-  pinText: {
-    fontSize: 16,
-  },
-  calloutContainer: {
-    width: 200,
->>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
-=======
->>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)
     padding: 12,
     backgroundColor: '#1e2130',
     borderRadius: 14,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
   },
-<<<<<<< HEAD
-<<<<<<< HEAD
 
-=======
->>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
-=======
-
->>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)
   calloutTitle: {
     color: '#fff',
     fontSize: 14,
     fontWeight: '700',
     marginBottom: 4,
   },
-<<<<<<< HEAD
-<<<<<<< HEAD
 
-=======
->>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
-=======
-
->>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)
   calloutSubtitle: {
     color: 'rgba(255,255,255,0.7)',
     fontSize: 12,
     marginBottom: 10,
   },
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)
 
   coordinateBox: {
     backgroundColor: 'rgba(255,255,255,0.06)',
@@ -460,87 +308,39 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
 
-<<<<<<< HEAD
-=======
->>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
-=======
->>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)
   calloutRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 10,
   },
-<<<<<<< HEAD
-<<<<<<< HEAD
 
-=======
->>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
-=======
-
->>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)
   calloutStatBox: {
     alignItems: 'center',
     flex: 1,
   },
-<<<<<<< HEAD
-<<<<<<< HEAD
 
-=======
->>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
-=======
-
->>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)
   calloutStatValue: {
     color: '#fff',
     fontSize: 14,
     fontWeight: '700',
   },
-<<<<<<< HEAD
-<<<<<<< HEAD
 
-=======
->>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
-=======
-
->>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)
   calloutStatLabel: {
     color: 'rgba(255,255,255,0.6)',
     fontSize: 10,
   },
-<<<<<<< HEAD
-<<<<<<< HEAD
 
   calloutStatus: {
-=======
-  calloutStatus: {
-    color: '#E24B4A',
->>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
-=======
-
-  calloutStatus: {
->>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)
     fontWeight: '700',
     fontSize: 12,
     textAlign: 'right',
     marginBottom: 10,
   },
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)
 
   calloutButtonRow: {
     marginTop: 8,
   },
 
-<<<<<<< HEAD
-=======
-  calloutButtonRow: {
-    marginTop: 8,
-  },
->>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
-=======
->>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)
   calloutButton: {
     paddingVertical: 8,
     paddingHorizontal: 12,
@@ -550,25 +350,10 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(29, 158, 117, 0.4)',
     alignItems: 'center',
   },
-<<<<<<< HEAD
-<<<<<<< HEAD
 
-=======
->>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
-=======
-
->>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)
   calloutButtonText: {
     color: '#1D9E75',
     fontSize: 12,
     fontWeight: '600',
   },
-<<<<<<< HEAD
-<<<<<<< HEAD
 });
-=======
-});
->>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
-=======
-});
->>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)

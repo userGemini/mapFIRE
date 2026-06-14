@@ -286,8 +286,4 @@ export const simpanBanyakSensorMQTTKeRealtimeDatabase = async (
   await update(ref(realtimeDb), updates);
 
   return jumlahSensorTersimpan;
-<<<<<<< HEAD
 };
-=======
-};
->>>>>>> caf9b93 (Axios untuk mengirim perintah dari TELEGRAM)
