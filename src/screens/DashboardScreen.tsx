@@ -168,7 +168,7 @@ export default function DashboardScreen({
         <View style={styles.logoRow}>
           <Image source={ICONS.fire} style={{ width: 30, height: 30}} resizeMode="contain" />
           <Text style={styles.appName}>map<Text style={{ color: COLORS.brand }}>FIRE</Text></Text>
-        </View>r
+        </View>
 
         <View style={styles.statsRow}>
           {([

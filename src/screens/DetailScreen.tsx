@@ -21,6 +21,9 @@ import type { RootStackParamList } from '../types';
 // 🌟 Import service Axios POST Telegram
 import { kirimNotifikasiDaruratTeks } from '../services/emergencyService';
 
+import { listenHistorySensor24Jam, SensorHistoryPoint } from '../services/realtimeSensorService';
+import { RumahSensor } from '../types';
+
 type Nav = StackNavigationProp<RootStackParamList, 'Detail'>;
 type Route = RouteProp<RootStackParamList, 'Detail'>;
 
@@ -81,35 +84,69 @@ export default function DetailScreen({
   navigation: Nav;
 }): React.JSX.Element {
   const insets = useSafeAreaInsets();
-  const { rumah } = route.params;
+  const { rumah: initialRumah } = route.params;
 
+  // 1. State untuk menampung data sensor tunggal yang paling update secara live
+  const [rumah, setRumah] = useState<RumahSensor>(initialRumah);
+
+  // 2. State untuk menampung barisan titik grafik historis (maksimal 12 baris terakhir untuk MiniChart)
   const [history, setHistory] = useState({
-    suhu: Array.from({ length: 12 }, () => rumah.suhu ?? 0),
-    asap: Array.from({ length: 12 }, () => rumah.asap ?? 0),
-    co: Array.from({ length: 12 }, () => rumah.co ?? 0),
+    suhu: Array.from({ length: 12 }, () => initialRumah.suhu ?? 0),
+    asap: Array.from({ length: 12 }, () => initialRumah.asap ?? 0),
+    co: Array.from({ length: 12 }, () => initialRumah.co ?? 0),
   });
 
-  // 🌟 State Loading untuk proses Axios POST
+  // State Loading untuk proses Axios POST Telegram
   const [loadingAxios, setLoadingAxios] = useState<boolean>(false);
 
+  // 3. EFFECT: Menghubungkan layar secara langsung ke Firebase Realtime Database
   useEffect(() => {
-    const iv = setInterval(() => {
-      const adaDataSensor =
-        rumah.suhu != null || rumah.asap != null || rumah.co != null;
+    // Jalankan listener 24 jam dari service Anda
+    const unsubscribe = listenHistorySensor24Jam(
+      initialRumah.id,
+      (dataHistory: SensorHistoryPoint[]) => {
+        if (dataHistory.length === 0) return;
 
-      if (!adaDataSensor) {
-        return;
+        const dataTerbaru = dataHistory[dataHistory.length - 1];
+        setRumah({
+          ...initialRumah,
+          suhu: dataTerbaru.suhu,
+          asap: dataTerbaru.asap,
+          co: dataTerbaru.co,
+          status: dataTerbaru.status,
+          online: dataTerbaru.online,
+          lastUpdate: new Date(dataTerbaru.timestamp),
+        });
+
+        const last12data = dataHistory.slice(-12);
+        
+        // C. Map data ke array angka murni
+        const arraySuhu = last12data.map(d => d.suhu ?? 0);
+        const arrayAsap = last12data.map(d => d.asap ?? 0);
+        const arrayCo = last12data.map(d => d.co ?? 0);
+
+        const sisaSuhu = 12 - arraySuhu.length;
+        const penuhiSuhu = sisaSuhu > 0 ? [...new Array(sisaSuhu).fill(0), ...arraySuhu] : arraySuhu;
+
+        const sisaAsap = 12 - arrayAsap.length;
+        const penuhiAsap = sisaAsap > 0 ? [...new Array(sisaAsap).fill(0), ...arrayAsap] : arrayAsap;
+
+        const sisaCo = 12 - arrayCo.length;
+        const penuhiCo = sisaCo > 0 ? [...new Array(sisaCo).fill(0), ...arrayCo] : arrayCo;
+
+        setHistory({
+          suhu: penuhiSuhu,
+          asap: penuhiAsap,
+          co: penuhiCo,
+        });
+      },
+      (error) => {
+        console.error("Gagal sinkronisasi data detail rumah:", error);
       }
+    );
 
-      setHistory((prev) => ({
-        suhu: appendHistoryValue(prev.suhu, rumah.suhu),
-        asap: appendHistoryValue(prev.asap, rumah.asap),
-        co: appendHistoryValue(prev.co, rumah.co),
-      }));
-    }, 5000);
-
-    return () => clearInterval(iv);
-  }, [rumah]);
+    return () => unsubscribe();
+  }, [initialRumah.id]);
 
   // 🌟 Fungsi Handler pemicu Notifikasi Dinamis berdasarkan status device
   const handleKirimLaporanDarurat = async (levelAksi: 'waspada' | 'bahaya') => {
@@ -234,7 +271,7 @@ export default function DetailScreen({
 
         <Text style={styles.section}>📈 Historis CO Gas (ppm)</Text>
         <View style={styles.chartCard}>
-          <MiniChart data={history.co} color={COLORS.danger} maxVal={150} />
+          <MiniChart data={history.co} color={COLORS.danger} maxVal={20} />
           <View style={styles.chartFoot}>
             <Text style={styles.chartLbl}>12 mnt lalu</Text>
             <Text style={styles.chartLbl}>Sekarang</Text>
