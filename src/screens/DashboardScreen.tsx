@@ -5,6 +5,7 @@ import {
   View,
   Text,
   StyleSheet,
+  Image,
   TouchableOpacity,
   Animated,
 } from 'react-native';
@@ -25,6 +26,7 @@ import MapViewMap from '../components/MapViewMap';
 import SensorCard from '../components/SensorCard';
 import StatusBadge from '../components/StatusBadge';
 import type { RootStackParamList, RumahSensor, StatusSensor } from '../types';
+import { ICONS } from '../constants/icons'; 
 
 type Nav = StackNavigationProp<RootStackParamList, 'MainTabs'>;
 type Route = RouteProp<RootStackParamList, 'MainTabs'>;
@@ -164,9 +166,9 @@ export default function DashboardScreen({
       {/* Top bar */}
       <View style={[styles.topbar, { paddingTop: Math.max(insets.top, 12) }]}>
         <View style={styles.logoRow}>
-          <View style={styles.logoCircle}><Text style={{ fontSize: 13 }}>🔥</Text></View>
+          <Image source={ICONS.fire} style={{ width: 30, height: 30}} resizeMode="contain" />
           <Text style={styles.appName}>map<Text style={{ color: COLORS.brand }}>FIRE</Text></Text>
-        </View>
+        </View>r
 
         <View style={styles.statsRow}>
           {([

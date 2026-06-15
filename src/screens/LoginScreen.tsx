@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -21,6 +22,7 @@ import {
   loginUserDenganFirestore,
   registerUser,
 } from '../services/authAccessService';
+import { ICONS } from '../constants/icons';                   // ← tambahkan ini
 
 type Nav = StackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -134,7 +136,7 @@ export default function LoginScreen({
 
       <View style={styles.card}>
         <View style={styles.logoCircle}>
-          <Text style={styles.logoIcon}>🔥</Text>
+          <Image source={ICONS.fire} style={{ width: 50, height: 50 }} resizeMode="contain" />
         </View>
 
         <Text style={styles.title}>
@@ -144,7 +146,7 @@ export default function LoginScreen({
         <Text style={styles.subtitle}>
           {isRegister
             ? 'Buat akun baru untuk mengakses dashboard.'
-            : 'Masuk untuk memantau sensor kebakaran.'}
+            : 'Mapping and Monitoring Fire Hazard in Your Area'}
         </Text>
 
         {isRegister && (
@@ -215,7 +217,7 @@ export default function LoginScreen({
 
         {!isRegister && (
           <Text style={styles.note}>
-            Jika belum terdaftar, sistem akan menampilkan pesan “Kamu belum mendaftar.”
+            EAS Telemetry & Mobile Computing
           </Text>
         )}
       </View>

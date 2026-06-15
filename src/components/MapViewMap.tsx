@@ -101,7 +101,7 @@ export default function MapViewMap({
                 latitude,
                 longitude,
               }}
-              tracksViewChanges={true} //false untuk performa, true untuk marker yang dipilih agar animasi callout lancar
+              tracksViewChanges={true}
               onPress={() => onMarkerPress(rumah)}
             >
             <View style={styles.markerContainer}>
