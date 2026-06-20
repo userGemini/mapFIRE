@@ -1,32 +1,31 @@
-<<<<<<< HEAD
-# mapFIRE2
-=======
-1. KUNCI IDENTITAS
-   Sebelum commit, pastikan Git di VS Code kamu sudah terkunci pakai nama akun GitHub-mu sendiri. 
-   Jalankan perintah ini di terminal:
-   
-   git config --global user.name "NAMA_AKUN_GITHUBMU"
-   git config --global user.email "EMAIL_GITHUBMU"
+🔥 mapFIRE 🔥
 
-2. JANGAN PERNAH PAKAI '--force' SAAT PUSH
-   Gunakan push normal saja:
-   
-   git push origin main
-   
-   *Catatan: Penggunaan '--force' dilarang keras karena bisa menghapus riwayat commit lama milik anggota kelompok lain secara permanen dari server!
+Aplikasi monitoring kebakaran real-time berbasis Expo (React Native) untuk sisi client dan Node.js Server untuk background automation. Menampilkan peta lokasi, data sensor (suhu, asap, CO) secara real-time, autentikasi petugas via Firebase, notifikasi darurat Telegram, dan integrasi cuaca Open-Meteo.
 
-3. CARA AMAN UPDATE KODINGAN (BIAR GAK TABRAKAN)
-   Sebelum kamu mulai ngoding fitur baru, biasakan tarik dulu kode terbaru yang ada di GitHub biar sinkron:
-   
-   git pull origin main
+✨ Fitur Utama
+•	Monitoring Real-time & Peta : Visualisasi status rumah (Aman/Waspada/Bahaya) pada peta interaktif menggunakan data live dari MQTT (ESP32) yang disinkronkan ke Firebase Realtime Database.
+•	Histori 24 Jam & Grafik : Menampilkan tren fluktuasi 12 data terakhir lewat komponen MiniChart.
+•	Otomatisasi Server & Cuaca : Background service Node.js yang otomatis mengambil data cuaca Open-Meteo dan melakukan batch update ke Cloud Firestore untuk analisis jangka panjang.
+•	Notifikasi Telegram Gateway : Pengiriman pesan darurat otomatis ke grup Telegram petugas via Telegram Bot API saat sensor mendeteksi status Waspada/Bahaya.
+•	Manajemen Akses Petugas : Registrasi dan validasi hak akses petugas pemadam secara terpusat melalui Firebase Auth dan Cloud Firestore.
 
-4. FORMAT PESAN COMMIT
-   Biar kita tahu file apa saja yang diubah, tolong tulis pesan commit yang jelas.
-   Contoh:
-   git commit -m "Fix: Memperbaiki eror mqtt di Screen Dashboard"
-   git commit -m "Update: Menambahkan marker baru di MapViewMap.tsx"
+🛠️ Tech Stack & Struktur Ringkas
+•	Client: Expo SDK 54, TypeScript, React Navigation, react-native-maps, Axios.
+•	Backend & Cloud: Node.js, Firebase (Auth, Firestore, Realtime Database), MQTT Protocol.
+mapFIRE/
+├── server/          # Backend automation service (server.ts)
+├── src/
+│   ├── components/  # MapViewMap, SensorCard, StatusBadge
+│   ├── constants/   # Tema warna & konfigurasi MQTT
+│   ├── hooks/       # Custom hooks untuk sub MQTT & Firebase RTDB
+│   ├── navigation/  # AppNavigator (Stack Screen)
+│   ├── screens/     # Login, Dashboard, Detail, & Notifikasi
+│   ├── services/    # Firebase, Auth, MQTT, Firestore, Weather, & Emergency Service
+│   └── types/       # Type definitions TypeScript
+└── App.tsx          # Root entry point aplikasi
 
-==================================CHAT=======================================
+⚙️ Catatan Penting Keamanan
+⚠️ PERINGATAN: Kredensial Firebase dan token Telegram Bot saat ini masih tertanam langsung di dalam kode (hardcoded). Sebelum melakukan push ke repositori publik, pindahkan seluruh token sensitif ke variabel lingkungan (.env atau app.config.js) dan daftarkan .env ke dalam file .gitignore.
 
-userGEMINI : ojo diangger commit rek, file ku ono sg ilang huhuhuu
->>>>>>> 4eb5acbe87c843d3be7ac1e77de3c440cd2b2329
+Dibuat dengan ❤️ untuk keselamatan masyarakat — mapFIRE v1.0
+
