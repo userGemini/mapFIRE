@@ -1,4 +1,4 @@
-// src/screens/DetailScreen.tsx — SDK 54 REVISI INTEGRASI TELEGRAM
+// src/screens/DetailScreen.tsx — SDK 54 REVISI INTEGRASI TELEGRAM & LIVE WEATHER API
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -18,8 +18,10 @@ import { COLORS } from '../constants/colors';
 import SensorCard from '../components/SensorCard';
 import StatusBadge from '../components/StatusBadge';
 import type { RootStackParamList } from '../types';
-// 🌟 Import service Axios POST Telegram
+
+// 🌟 Import service Axios POST Telegram & GET Weather
 import { kirimNotifikasiDaruratTeks } from '../services/emergencyService';
+import { ambilCuacaSektorKebakaran, KondisiCuacaLuar } from '../services/weatherService';
 
 import { listenHistorySensor24Jam, SensorHistoryPoint } from '../services/realtimeSensorService';
 import { RumahSensor } from '../types';
@@ -61,21 +63,6 @@ function MiniChart({ data, color, maxVal }: ChartProps): React.JSX.Element {
   );
 }
 
-const appendHistoryValue = (
-  previousValues: number[],
-  newValue: number | null | undefined,
-): number[] => {
-  const lastValue =
-    previousValues.length > 0 ? previousValues[previousValues.length - 1] : 0;
-
-  const nextValue =
-    typeof newValue === 'number' && Number.isFinite(newValue)
-      ? newValue
-      : lastValue;
-
-  return [...previousValues.slice(1), nextValue];
-};
-
 export default function DetailScreen({
   route,
   navigation,
@@ -86,22 +73,39 @@ export default function DetailScreen({
   const insets = useSafeAreaInsets();
   const { rumah: initialRumah } = route.params;
 
-  // 1. State untuk menampung data sensor tunggal yang paling update secara live
+  // 1. State data sensor tunggal ter-update secara live
   const [rumah, setRumah] = useState<RumahSensor>(initialRumah);
 
-  // 2. State untuk menampung barisan titik grafik historis (maksimal 12 baris terakhir untuk MiniChart)
+  // 2. State barisan titik grafik historis
   const [history, setHistory] = useState({
     suhu: Array.from({ length: 12 }, () => initialRumah.suhu ?? 0),
     asap: Array.from({ length: 12 }, () => initialRumah.asap ?? 0),
     co: Array.from({ length: 12 }, () => initialRumah.co ?? 0),
   });
 
+  // 3. 🌟 State Baru untuk Integrasi Live Weather API
+  const [cuaca, setCuaca] = useState<KondisiCuacaLuar | null>(null);
+  const [loadingCuaca, setLoadingCuaca] = useState<boolean>(true);
+
   // State Loading untuk proses Axios POST Telegram
   const [loadingAxios, setLoadingAxios] = useState<boolean>(false);
 
-  // 3. EFFECT: Menghubungkan layar secara langsung ke Firebase Realtime Database
+  // 4. EFFECT: Sinkronisasi Firebase Realtime Database & Open-Meteo Weather API
   useEffect(() => {
-    // Jalankan listener 24 jam dari service Anda
+    // A. Tarik Data Cuaca Luar Sektor via Axios (Dijalankan sekali di awal berdasarkan koordinat)
+    if (initialRumah.lat && initialRumah.lng) {
+      setLoadingCuaca(true);
+      ambilCuacaSektorKebakaran(initialRumah.lat, initialRumah.lng)
+        .then((hasilCuaca) => {
+          if (hasilCuaca) setCuaca(hasilCuaca);
+        })
+        .catch((err) => console.error("Gagal sinkronisasi REST API Cuaca:", err))
+        .finally(() => setLoadingCuaca(false));
+    } else {
+      setLoadingCuaca(false);
+    }
+
+    // B. Jalankan listener Firebase Realtime untuk update sensor indoor
     const unsubscribe = listenHistorySensor24Jam(
       initialRumah.id,
       (dataHistory: SensorHistoryPoint[]) => {
@@ -120,7 +124,6 @@ export default function DetailScreen({
 
         const last12data = dataHistory.slice(-12);
         
-        // C. Map data ke array angka murni
         const arraySuhu = last12data.map(d => d.suhu ?? 0);
         const arrayAsap = last12data.map(d => d.asap ?? 0);
         const arrayCo = last12data.map(d => d.co ?? 0);
@@ -148,7 +151,7 @@ export default function DetailScreen({
     return () => unsubscribe();
   }, [initialRumah.id]);
 
-  // 🌟 Fungsi Handler pemicu Notifikasi Dinamis berdasarkan status device
+  // 5. 🔥 Fungsi Handler pemicu Notifikasi Telegram via Axios POST (Sudah di-revisi)
   const handleKirimLaporanDarurat = async (levelAksi: 'waspada' | 'bahaya') => {
     setLoadingAxios(true);
     try {
@@ -159,7 +162,8 @@ export default function DetailScreen({
         suhu: rumah.suhu ?? 0,
         asap: rumah.asap ?? 0,
         co: rumah.co ?? 0,
-        level: levelAksi, // Menyalin parameter level ke service Axios
+        level: levelAksi,
+        cuacaLuar: cuaca, // 🌟 Mengirimkan state cuaca luar Open-Meteo ke emergencyService
       };
 
       const sukses = await kirimNotifikasiDaruratTeks(payload);
@@ -205,8 +209,37 @@ export default function DetailScreen({
       </View>
 
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-        <Text style={styles.section}>📡 Data Sensor Real-time</Text>
+        
+        {/* ================= 🌟 PANEL: LIVE WEATHER API (OUTDOOR) ================= */}
+        <Text style={styles.section}>☁️ Kondisi Cuaca Sekitar (Lingkungan Luar)</Text>
+        <View style={[styles.weatherCard, { borderColor: COLORS.warning + '70' }]}>
+          {loadingCuaca ? (
+            <View style={styles.weatherLoadingBox}>
+              <ActivityIndicator size="small" color={COLORS.warning} />
+              <Text style={styles.weatherLoadingText}>Menghubungkan ke Open-Meteo REST API...</Text>
+            </View>
+          ) : cuaca ? (
+            <View style={styles.weatherGrid}>
+              <View style={styles.weatherItem}>
+                <Text style={styles.weatherLabel}>Suhu Udara</Text>
+                <Text style={styles.weatherValue}>{cuaca.suhuLingkungan} °C</Text>
+              </View>
+              <View style={styles.weatherItem}>
+                <Text style={styles.weatherLabel}>Kelembapan</Text>
+                <Text style={styles.weatherValue}>{cuaca.kelembapan} %</Text>
+              </View>
+              <View style={styles.weatherItem}>
+                <Text style={styles.weatherLabel}>Kec. Angin</Text>
+                <Text style={styles.weatherValue}>{cuaca.kecepatanAngin} km/h</Text>
+              </View>
+            </View>
+          ) : (
+            <Text style={styles.weatherErrorText}>❌ Gagal memuat data cuaca sektor eksternal.</Text>
+          )}
+        </View>
+        {/* ============================================================================== */}
 
+        <Text style={styles.section}>📡 Data Sensor Real-time (Indoor)</Text>
         <View style={styles.sensorGrid}>
           <SensorCard
             icon="🌡️"
@@ -215,7 +248,6 @@ export default function DetailScreen({
             unit="°C"
             status={rumah.status}
           />
-
           <SensorCard
             icon="💨"
             label="Asap"
@@ -223,7 +255,6 @@ export default function DetailScreen({
             unit="%"
             status={rumah.status}
           />
-
           <SensorCard
             icon="☁️"
             label="CO Gas"
@@ -236,13 +267,12 @@ export default function DetailScreen({
         {/* Ambang batas */}
         <View style={styles.threshBox}>
           <Text style={styles.threshTitle}>Ambang Batas Sensor</Text>
-
           <View style={styles.threshRow}>
-            {([
+            {(([
               [COLORS.safe, 'Suhu < 45°C'],
               [COLORS.warning, 'Suhu 45–65°C'],
               [COLORS.danger, 'Suhu > 65°C'],
-            ] as [string, string][]).map(([c, l]) => (
+            ] as [string, string][])).map(([c, l]) => (
               <View key={l} style={styles.threshItem}>
                 <View style={[styles.threshDot, { backgroundColor: c }]} />
                 <Text style={styles.threshTxt}>{l}</Text>
@@ -255,7 +285,7 @@ export default function DetailScreen({
         <View style={styles.chartCard}>
           <MiniChart data={history.suhu} color={COLORS.brand} maxVal={100} />
           <View style={styles.chartFoot}>
-            <Text style={styles.chartLbl}>12 mnt lalu</Text>
+            <Text style={styles.chartLbl}>12 data lalu</Text>
             <Text style={styles.chartLbl}>Sekarang</Text>
           </View>
         </View>
@@ -264,7 +294,7 @@ export default function DetailScreen({
         <View style={styles.chartCard}>
           <MiniChart data={history.asap} color={COLORS.warning} maxVal={100} />
           <View style={styles.chartFoot}>
-            <Text style={styles.chartLbl}>12 mnt lalu</Text>
+            <Text style={styles.chartLbl}>12 data lalu</Text>
             <Text style={styles.chartLbl}>Sekarang</Text>
           </View>
         </View>
@@ -273,13 +303,12 @@ export default function DetailScreen({
         <View style={styles.chartCard}>
           <MiniChart data={history.co} color={COLORS.danger} maxVal={20} />
           <View style={styles.chartFoot}>
-            <Text style={styles.chartLbl}>12 mnt lalu</Text>
+            <Text style={styles.chartLbl}>12 data lalu</Text>
             <Text style={styles.chartLbl}>Sekarang</Text>
           </View>
         </View>
 
         <Text style={styles.section}>ℹ️ Informasi Perangkat</Text>
-
         <View style={styles.infoCard}>
           {infoRows.map((row, i) => (
             <View
@@ -295,7 +324,7 @@ export default function DetailScreen({
           ))}
         </View>
 
-        {/* 🌟 TOMBOL AKSI DINAMIS TERKONEKSI TELEGRAM */}
+        {/* TOMBOL AKSI DINAMIS TERKONEKSI TELEGRAM */}
         {(rumah.status === 'bahaya' || rumah.status === 'waspada') && (
           <TouchableOpacity
             style={[
@@ -363,10 +392,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sensorGrid: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
-  },
+  flexDirection: 'row', // Tata letak horizontal yang bener cukup pakai ini saja
+  gap: 8,
+  marginBottom: 12,
+},
   threshBox: {
     backgroundColor: COLORS.bg_secondary,
     borderRadius: 12,
@@ -457,5 +486,48 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 15,
     fontWeight: '700',
+  },
+  weatherCard: {
+    backgroundColor: COLORS.bg_secondary,
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 14,
+    marginBottom: 4,
+  },
+  weatherLoadingBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+  },
+  weatherLoadingText: {
+    color: COLORS.text_muted,
+    marginLeft: 10,
+    fontSize: 12,
+  },
+  weatherGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  weatherItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  weatherLabel: {
+    fontSize: 11,
+    color: COLORS.text_muted,
+    marginBottom: 4,
+  },
+  weatherValue: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  weatherErrorText: {
+    color: COLORS.danger,
+    fontSize: 12,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });

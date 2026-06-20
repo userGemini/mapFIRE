@@ -1,4 +1,5 @@
-import axios from 'axios';
+// src/services/weatherService.ts
+import axios from 'axios'; // Wajib menggunakan Axios
 
 export interface KondisiCuacaLuar {
   kecepatanAngin: number;
@@ -7,24 +8,23 @@ export interface KondisiCuacaLuar {
 }
 
 export const ambilCuacaSektorKebakaran = async (lat: number, lng: number): Promise<KondisiCuacaLuar | null> => {
-  try {
-    // Memanfaatkan API publik gratis Open-Meteo tanpa perlu API Key
-    const urlAPI = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,wind_speed_10m`;
-    
-    const respon = await axios.get(urlAPI, { timeout: 4000 });
+  // Menggunakan backtick (`) agar tidak terkena error 403 Forbidden
+  const urlAPI = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,relative_humidity_2m,wind_speed_10m&timezone=auto`;
 
-    if (respon.status === 200) {
-      const currentData = respon.data.current;
+  try {
+    const respon = await axios.get(urlAPI, { timeout: 4000 }); // Menggunakan Axios
+    
+    if (respon.status === 200 && respon.data.current) {
+      const dataCurrent = respon.data.current;
       return {
-        suhuLingkungan: currentData.temperature_2m,
-        kelembapan: currentData.relative_humidity_2m,
-        kecepatanAngin: currentData.wind_speed_10m, // Data ini sangat berguna bagi petugas lapangan
+        suhuLingkungan: dataCurrent.temperature_2m,
+        kelembapan: dataCurrent.relative_humidity_2m,
+        kecepatanAngin: dataCurrent.wind_speed_10m,
       };
     }
     return null;
-  } catch (error: any) {
-    console.error("Error Axios GET Cuaca:", error.message);
+  } catch (error) {
+    console.error('❌ [Axios GET] Gagal mengambil data cuaca:', error);
     return null;
   }
 };
-

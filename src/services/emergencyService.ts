@@ -1,6 +1,13 @@
 // src/services/emergencyService.ts
 import axios from 'axios';
 
+// 🌟 Tambahkan interface untuk tipe data cuaca luar dari Open-Meteo
+export interface KondisiCuacaLuar {
+  suhuLingkungan: number;
+  kelembapan: number;
+  kecepatanAngin: number; //
+}
+
 // Definisi type parameter payload
 export interface RangkumanDarurat {
   idRumah: string;
@@ -10,6 +17,7 @@ export interface RangkumanDarurat {
   asap: number;
   co: number;
   level: 'waspada' | 'bahaya'; // 🌟 Membedakan isi tombol/status
+  cuacaLuar?: KondisiCuacaLuar | null; // 🌟 Tambahkan properti opsional untuk membawa data cuaca
 }
 
 export const kirimNotifikasiDaruratTeks = async (payload: RangkumanDarurat): Promise<boolean> => {
@@ -18,7 +26,28 @@ export const kirimNotifikasiDaruratTeks = async (payload: RangkumanDarurat): Pro
 
   const waktuLog = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
 
-  // 🌟 Logika Penyesuaian Pesan Berdasarkan Level Status (Sangat Profesional & Terstruktur)
+  // 🌟 Membuat teks cuaca jika datanya berhasil dilemparkan dari DetailScreen
+  let teksCuaca = '';
+  if (payload.cuacaLuar) {
+    teksCuaca = 
+`*☁️ [DATA KONDISI CUACA OUTDOOR]*
+\`\`\`
+Suhu Udara Luar: ${payload.cuacaLuar.suhuLingkungan} °C
+Kelembapan     : ${payload.cuacaLuar.kelembapan} %
+Kecepatan Angin: ${payload.cuacaLuar.kecepatanAngin} km/h
+\`\`\`
+_Rekomendasi Taktis: Perhatikan arah embusan angin luar untuk mengantisipasi laju persebaran asap._
+---------------------------------------------`;
+  } else {
+    teksCuaca = 
+`*☁️ [DATA KONDISI CUACA OUTDOOR]*
+\`\`\`
+Data cuaca lingkungan gagal terintegrasi.
+\`\`\`
+---------------------------------------------`;
+  }
+
+  // 🌟 Logika Penyesuaian Pesan Berdasarkan Level Status
   let teksPesan = '';
 
   if (payload.level === 'bahaya') {
@@ -40,6 +69,7 @@ Densitas Asap: ${payload.asap} %
 Kadar Gas CO : ${payload.co} ppm
 \`\`\`
 ---------------------------------------------
+${teksCuaca}
 *KETERANGAN:*
 ⚠️ *PERINGATAN KRITIKAL!* Indikasi kebakaran terdeteksi kuat oleh sistem otomatis. Armada pemadam kebakaran sektor terkait segera dikerahkan penuh secepatnya menuju titik lokasi!
 
@@ -63,6 +93,7 @@ Densitas Asap: ${payload.asap} %
 Kadar Gas CO : ${payload.co} ppm
 \`\`\`
 ---------------------------------------------
+${teksCuaca}
 *KETERANGAN:*
 Sistem mendeteksi lonjakan parameter di atas ambang batas normal. Petugas patroli sektor telah diinstruksikan untuk melakukan validasi visual ke lokasi check point.
 
@@ -77,7 +108,7 @@ _Pesan otomatis dialirkan via mapFIRE REST API Gateway._`;
     });
 
     if (responseAxios.status === 200) {
-      console.log(`🚀 [Axios POST] Sukses mengirim notifikasi level [${payload.level}] ke Telegram!`);
+      console.log(`🚀 [Axios POST] Sukses mengirim notifikasi level [${payload.level}] dengan data cuaca ke Telegram!`);
       return true;
     }
     return false;
