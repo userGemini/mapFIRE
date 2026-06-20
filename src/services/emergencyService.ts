@@ -1,3 +1,4 @@
+// src/services/emergencyService.ts
 import axios from 'axios';
 
 // Definisi type parameter payload
@@ -8,38 +9,71 @@ export interface RangkumanDarurat {
   suhu: number;
   asap: number;
   co: number;
-  level: 'waspada' | 'bahaya'; // 🌟 Ditambahkan untuk membedakan isi tombol/status
+  level: 'waspada' | 'bahaya'; // 🌟 Membedakan isi tombol/status
 }
 
 export const kirimNotifikasiDaruratTeks = async (payload: RangkumanDarurat): Promise<boolean> => {
   const TELEGRAM_BOT_TOKEN = "8715412067:AAEanRJMmVke_6U3j4ug1cuA0Ct1LDjWHLY";
   const TELEGRAM_CHAT_ID = "-5518925694"; 
 
-  // 🌟 Logika Penyesuaian Pesan Berdasarkan Level Status
-  const judulStatus = payload.level === 'bahaya' 
-    ? '🚨 PANGGILAN KEDARURATAN MAPFIRE (BAHAYA) 🚨' 
-    : '⚠️ PERINGATAN DINI MAPFIRE (WASPADA) ⚠️';
+  const waktuLog = new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' });
 
-  const tindakanKonklusi = payload.level === 'bahaya'
-    ? '🚒 STATUS CRITICAL: Tim armada pemadam dikerahkan penuh secepatnya ke lokasi!'
-    : '👮 STATUS WARNING: Petugas patroli sektor dikerahkan untuk cek lokasi!';
+  // 🌟 Logika Penyesuaian Pesan Berdasarkan Level Status (Sangat Profesional & Terstruktur)
+  let teksPesan = '';
 
-  const teksPesan = 
-    `${judulStatus}\n\n` +
-    `Detail Lokasi:\n` +
-    `• Nama Pemilik: ${payload.namaPemilik}\n` +
-    `• ID Perangkat: ${payload.idRumah}\n` +
-    `• Alamat: ${payload.alamatRumah}\n\n` +
-    `Kondisi Sensor Terkini:\n` +
-    `• Parameter Suhu: ${payload.suhu} °C\n` +
-    `• Densitas Asap: ${payload.asap} %\n` +
-    `• Gas CO: ${payload.co} ppm\n\n` +
-    `Pesan ini dikirim otomatis via Axios REST API. ${tindakanKonklusi}`;
+  if (payload.level === 'bahaya') {
+    teksPesan = 
+`🚨 *[EMERGENCY CALL] PANGGILAN KEDARURATAN MAPFIRE* 🚨
+---------------------------------------------
+*Status Sektor* : CRITICAL (BAHAYA)
+*Waktu Log* : ${waktuLog}
+
+*📍 [DETAIL LOKASI]*
+• ID Perangkat : \`${payload.idRumah}\`
+• Nama Pemilik : *${payload.namaPemilik}*
+• Alamat       : *${payload.alamatRumah}*
+
+*📊 [DATA TELEMETRI SENSOR]*
+\`\`\`
+Suhu Udara   : ${payload.suhu} °C
+Densitas Asap: ${payload.asap} %
+Kadar Gas CO : ${payload.co} ppm
+\`\`\`
+---------------------------------------------
+*KETERANGAN:*
+⚠️ *PERINGATAN KRITIKAL!* Indikasi kebakaran terdeteksi kuat oleh sistem otomatis. Armada pemadam kebakaran sektor terkait segera dikerahkan penuh secepatnya menuju titik lokasi!
+
+_Pesan otomatis dialirkan via mapFIRE REST API Gateway._`;
+  } else {
+    teksPesan = 
+`⚠️ *[SYSTEM ALERT] PERINGATAN DINI MAPFIRE* ⚠️
+---------------------------------------------
+*Status Sektor* : WARNING (WASPADA)
+*Waktu Log* : ${waktuLog}
+
+*📍 [DETAIL LOKASI]*
+• ID Perangkat : \`${payload.idRumah}\`
+• Nama Pemilik : *${payload.namaPemilik}*
+• Alamat       : *${payload.alamatRumah}*
+
+*📊 [DATA TELEMETRI SENSOR]*
+\`\`\`
+Suhu Udara   : ${payload.suhu} °C
+Densitas Asap: ${payload.asap} %
+Kadar Gas CO : ${payload.co} ppm
+\`\`\`
+---------------------------------------------
+*KETERANGAN:*
+Sistem mendeteksi lonjakan parameter di atas ambang batas normal. Petugas patroli sektor telah diinstruksikan untuk melakukan validasi visual ke lokasi check point.
+
+_Pesan otomatis dialirkan via mapFIRE REST API Gateway._`;
+  }
 
   try {
     const responseAxios = await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       chat_id: TELEGRAM_CHAT_ID,
-      text: teksPesan
+      text: teksPesan,
+      parse_mode: 'Markdown' // 🌟 WAJIB ditambah agar format bold (*) dan code block (```) aktif di Telegram
     });
 
     if (responseAxios.status === 200) {
