@@ -3,10 +3,7 @@
 import {
   get,
   onValue,
-  orderByKey,
-  query,
   ref,
-  startAt,
   update,
 } from 'firebase/database';
 import { realtimeDb } from './firebase';
@@ -17,20 +14,67 @@ const SATU_HARI_MS = 24 * 60 * 60 * 1000;
 
 export type SensorHistoryPoint = {
   timestamp: number;
+  tanggal: string;
+  jam: string;
+  waktuLabel: string;
   id: string;
   nama: string;
   alamat: string;
   lat: number;
   lng: number;
-  suhu: number | null;
-  asap: number | null;
-  co: number | null;
+  suhu: number;
+  asap: number;
+  co: number;
   status: StatusSensor;
   online: boolean;
   sumber?: string;
 };
 
-const toNumberOrZero = (value: unknown): number  => {
+const pad2 = (value: number): string => {
+  return String(value).padStart(2, '0');
+};
+
+const pad3 = (value: number): string => {
+  return String(value).padStart(3, '0');
+};
+
+// Key history agar di Firebase tidak lagi angka panjang.
+// Contoh: 2026-06-13_12-30-05-123
+const buatHistoryKey = (timestamp: number): string => {
+  const date = new Date(timestamp);
+
+  const tahun = date.getFullYear();
+  const bulan = pad2(date.getMonth() + 1);
+  const tanggal = pad2(date.getDate());
+  const jam = pad2(date.getHours());
+  const menit = pad2(date.getMinutes());
+  const detik = pad2(date.getSeconds());
+  const miliDetik = pad3(date.getMilliseconds());
+
+  return `${tahun}-${bulan}-${tanggal}_${jam}-${menit}-${detik}-${miliDetik}`;
+};
+
+const buatTanggalLabel = (timestamp: number): string => {
+  const date = new Date(timestamp);
+
+  const tahun = date.getFullYear();
+  const bulan = pad2(date.getMonth() + 1);
+  const tanggal = pad2(date.getDate());
+
+  return `${tanggal}-${bulan}-${tahun}`;
+};
+
+const buatJamLabel = (timestamp: number): string => {
+  const date = new Date(timestamp);
+
+  const jam = pad2(date.getHours());
+  const menit = pad2(date.getMinutes());
+  const detik = pad2(date.getSeconds());
+
+  return `${jam}:${menit}:${detik}`;
+};
+
+const toNumberOrZero = (value: unknown): number => {
   const numberValue = Number(value);
   return Number.isFinite(numberValue) ? numberValue : 0;
 };
@@ -49,19 +93,15 @@ const ubahTimestampKeDate = (value: unknown): Date | null => {
 };
 
 const hitungStatusSensor = (
-  suhu: number | null,
-  asap: number | null,
-  co: number | null,
+  suhu: number,
+  asap: number,
+  co: number,
 ): StatusSensor => {
-  const nilaiSuhu = suhu ?? 0;
-  const nilaiAsap = asap ?? 0;
-  const nilaiCo = co ?? 0;
-
-  if (nilaiSuhu > 65 || nilaiAsap > 70 || nilaiCo > 100) {
+  if (suhu > 65 || asap > 70 || co > 100) {
     return 'bahaya';
   }
 
-  if (nilaiSuhu >= 45 || nilaiAsap >= 40 || nilaiCo >= 50) {
+  if (suhu >= 45 || asap >= 40 || co >= 50) {
     return 'waspada';
   }
 
@@ -94,8 +134,8 @@ const normalisasiSensor = (id: string, sensor: any): RumahSensor => {
     asap,
     co,
     status,
-    online: Boolean(sensor?.online ?? true),
-    lastUpdate: ubahTimestampKeDate(sensor?.lastUpdate ?? sensor?.updatedAt),
+    online: Boolean(sensor?.online ?? false),
+    lastUpdate: ubahTimestampKeDate(sensor?.lastUpdate ?? sensor?.timestamp),
   } as RumahSensor;
 };
 
@@ -147,13 +187,7 @@ export const listenHistorySensor24Jam = (
   callback: (data: SensorHistoryPoint[]) => void,
   onError?: (error: Error) => void,
 ): (() => void) => {
-  const batas24Jam = Date.now() - SATU_HARI_MS;
-
-  const historyRef = query(
-    ref(realtimeDb, `sensorHistory/${rumahId}`),
-    orderByKey(),
-    startAt(String(batas24Jam)),
-  );
+  const historyRef = ref(realtimeDb, `sensorHistory/${rumahId}`);
 
   const unsubscribe = onValue(
     historyRef,
@@ -163,17 +197,26 @@ export const listenHistorySensor24Jam = (
         return;
       }
 
+      const batas24Jam = Date.now() - SATU_HARI_MS;
       const history: SensorHistoryPoint[] = [];
 
       snapshot.forEach((childSnapshot) => {
-        const key = childSnapshot.key ?? '';
-        const timestamp = Number(key);
+        const sensor = childSnapshot.val();
 
-        if (!Number.isFinite(timestamp) || timestamp < batas24Jam) {
+        const timestampDariData = Number(sensor?.timestamp);
+        const timestampDariKey = Number(childSnapshot.key);
+        const timestamp = Number.isFinite(timestampDariData)
+          ? timestampDariData
+          : timestampDariKey;
+
+        if (!Number.isFinite(timestamp)) {
           return;
         }
 
-        const sensor = childSnapshot.val();
+        if (timestamp < batas24Jam) {
+          return;
+        }
+
         const rumahConfig = RUMAH_DATA.find((rumah) => rumah.id === rumahId);
         const rumahAny = rumahConfig as any;
 
@@ -190,6 +233,11 @@ export const listenHistorySensor24Jam = (
 
         history.push({
           timestamp,
+          tanggal: sensor?.tanggal ?? buatTanggalLabel(timestamp),
+          jam: sensor?.jam ?? buatJamLabel(timestamp),
+          waktuLabel:
+            sensor?.waktuLabel ??
+            `${buatTanggalLabel(timestamp)} ${buatJamLabel(timestamp)}`,
           id: rumahId,
           nama: sensor?.nama ?? rumahConfig?.nama ?? rumahId,
           alamat: sensor?.alamat ?? rumahConfig?.alamat ?? '-',
@@ -199,7 +247,7 @@ export const listenHistorySensor24Jam = (
           asap,
           co,
           status,
-          online: Boolean(sensor?.online ?? true),
+          online: Boolean(sensor?.online ?? false),
           sumber: sensor?.sumber,
         });
       });
@@ -228,13 +276,38 @@ const bersihkanHistoryLebihDari24Jam = async (
   }
 
   historySnapshot.forEach((childSnapshot) => {
-    const key = childSnapshot.key ?? '';
-    const timestamp = Number(key);
+    const sensor = childSnapshot.val();
 
-    if (Number.isFinite(timestamp) && timestamp < batas24Jam) {
-      updates[`sensorHistory/${rumahId}/${key}`] = null;
+    const timestampDariData = Number(sensor?.timestamp);
+    const timestampDariKey = Number(childSnapshot.key);
+    const timestamp = Number.isFinite(timestampDariData)
+      ? timestampDariData
+      : timestampDariKey;
+
+    if (!Number.isFinite(timestamp)) {
+      return;
+    }
+
+    if (timestamp < batas24Jam) {
+      updates[`sensorHistory/${rumahId}/${childSnapshot.key}`] = null;
     }
   });
+};
+
+export const bersihkanSemuaHistoryLebihDari24Jam = async () => {
+  const updates: Record<string, any> = {};
+
+  for (const rumah of RUMAH_DATA) {
+    await bersihkanHistoryLebihDari24Jam(rumah.id, updates);
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return 0;
+  }
+
+  await update(ref(realtimeDb), updates);
+
+  return Object.keys(updates).length;
 };
 
 export const simpanBanyakSensorMQTTKeRealtimeDatabase = async (
@@ -242,15 +315,14 @@ export const simpanBanyakSensorMQTTKeRealtimeDatabase = async (
 ) => {
   const updates: Record<string, any> = {};
   const waktuSekarang = Date.now();
+  const historyKey = buatHistoryKey(waktuSekarang);
+
   let jumlahSensorTersimpan = 0;
 
   for (const rumah of sensorList) {
-    const adaData =
-      rumah.suhu != null || rumah.asap != null || rumah.co != null;
-
-    if (!adaData) {
-      continue;
-    }
+    const suhu = rumah.suhu ?? 0;
+    const asap = rumah.asap ?? 0;
+    const co = rumah.co ?? 0;
 
     const dataSensor = {
       id: rumah.id,
@@ -258,22 +330,26 @@ export const simpanBanyakSensorMQTTKeRealtimeDatabase = async (
       alamat: rumah.alamat,
       lat: (rumah as any).lat,
       lng: (rumah as any).lng,
-      suhu: rumah.suhu ?? 0,
-      asap: rumah.asap ?? 0,
-      co: rumah.co ?? 0,
-      status: rumah.status,
-      online: rumah.online,
+      suhu,
+      asap,
+      co,
+      status: rumah.status ?? hitungStatusSensor(suhu, asap, co),
+      online: rumah.online ?? false,
       lastUpdate: waktuSekarang,
+      timestamp: waktuSekarang,
+      tanggal: buatTanggalLabel(waktuSekarang),
+      jam: buatJamLabel(waktuSekarang),
+      waktuLabel: `${buatTanggalLabel(waktuSekarang)} ${buatJamLabel(waktuSekarang)}`,
       sumber: 'mqtt',
     };
 
-    // Data terbaru. Bagian ini akan selalu diperbarui.
+    // Data terbaru.
     updates[`sensors/${rumah.id}`] = dataSensor;
 
-    // Data history. Bagian ini tidak menimpa data lama karena pakai timestamp.
-    updates[`sensorHistory/${rumah.id}/${waktuSekarang}`] = dataSensor;
+    // Data history dengan key berbentuk tanggal dan jam.
+    updates[`sensorHistory/${rumah.id}/${historyKey}`] = dataSensor;
 
-    // Hapus history yang lebih dari 24 jam.
+    // Hapus history milik rumah ini yang sudah lebih dari 24 jam.
     await bersihkanHistoryLebihDari24Jam(rumah.id, updates);
 
     jumlahSensorTersimpan += 1;
