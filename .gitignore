@@ -39,3 +39,10 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# AI Assistant Config
+.claude/
+CLAUDE.md
+
+# Log files
+*.log
